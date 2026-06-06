@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ PLATFORM_NAME }} Ecommerce</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --nav-width: 90px;
+            --primary-color: #2c3e50;
+        }
+        
+        /* Full Screen Loader */
+        #page-loader {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #fff; z-index: 9999; display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Main Layout Styles */
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #f8f9fa; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Top Navigation Bar */
+        .top-navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 5%; background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px); border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            position: sticky; top: 0; z-index: 1000;
+            gap: 40px;
+        }
+        .top-navbar .brand { font-size: 1.5rem; font-weight: 800; color: #000; text-decoration: none; letter-spacing: 3px; text-transform: uppercase; flex-shrink: 0; }
+        
+        .nav-search { flex: 1; max-width: 400px; display: flex; align-items: center; background: #f4f5f7; border-radius: 50px; padding: 6px 16px; transition: all 0.3s ease; border: 1px solid transparent; }
+        .nav-search:focus-within { background: #fff; border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .nav-search input { border: none; background: transparent; padding: 6px 10px; width: 100%; outline: none; font-size: 0.95rem; margin: 0; color: #000; }
+        .nav-search input::placeholder { color: #aaa; font-weight: 300; }
+        .nav-search button { background: none; border: none; cursor: pointer; color: #555; display: flex; align-items: center; transition: color 0.3s ease; }
+        .nav-search button:hover { color: #000; }
+        
+        .nav-links { display: flex; align-items: center; gap: 35px; }
+        .nav-item { text-decoration: none; color: #000; font-weight: 500; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; position: relative; }
+        .nav-item::after { content: ''; position: absolute; width: 0; height: 1px; bottom: -4px; left: 0; background-color: #000; transition: width 0.3s ease; }
+        .nav-item:hover::after { width: 100%; }
+        
+        .btn-luxury { padding: 10px 24px; background: #000; color: #fff !important; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.75rem; font-weight: 600; text-decoration: none; transition: 0.3s; border: 1px solid #000; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-luxury:hover { background: #fff; color: #000 !important; }
+        .btn-luxury-outline { padding: 10px 24px; background: transparent; color: #000 !important; border: 1px solid #000; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.75rem; font-weight: 600; text-decoration: none; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-luxury-outline:hover { background: #000; color: #fff !important; }
+        .nav-link-subtle { color: #777 !important; text-transform: uppercase; letter-spacing: 1px; font-size: 0.75rem; font-weight: 500; text-decoration: none; transition: 0.3s; }
+        .nav-link-subtle:hover { color: #000 !important; }
+        
+        .auth-buttons { display: flex; gap: 20px; align-items: center; }
+        .nav-divider { width: 1px; height: 24px; background: #e0e0e0; margin: 0 5px; }
+        
+        .mobile-menu-btn { display: none; background: none; border: none; cursor: pointer; color: #000; padding: 5px; }
+        
+        .main-content {
+            flex: 1;
+            padding: 2rem 5%;
+            box-sizing: border-box;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .flash { background: #e2f0e6; border: 1px solid #75c088; padding: 10px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        /* Sleek Form & Button Elements */
+        input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], textarea, select {
+            width: 100%; padding: 14px 16px; margin-top: 5px; border-radius: 12px; border: 1px solid #e0e0e0; box-sizing: border-box; font-family: inherit; transition: all 0.3s ease; background-color: #fcfcfc;
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #000; background-color: #fff; box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05); }
+        
+        .btn {
+            padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); text-decoration: none; font-size: 1rem;
+        }
+        .btn:hover { background: #1a252f; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .btn:active { transform: scale(0.97) translateY(0); box-shadow: none; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #2ecc71; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+        .icon-btn { padding: 8px; aspect-ratio: 1; display: inline-flex; align-items: center; justify-content: center; }
+        
+        /* Custom Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #333; font-weight: 600; }
+        
+        /* Dynamic Input Group */
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .input-group input { margin-top: 0; }
+
+        /* Mobile Bottom Nav */
+        @media (max-width: 768px) {
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background: #fff; padding: 20px 0; box-shadow: 0 10px 20px rgba(0,0,0,0.1); gap: 15px; }
+            .nav-links.active { display: flex; }
+            .mobile-menu-btn { display: block; }
+            .main-content { padding: 1rem; }
+            .auth-buttons { flex-direction: column; width: 100%; padding: 0 20px; box-sizing: border-box; }
+            .auth-buttons .btn-luxury, .auth-buttons .btn-luxury-outline { width: 100%; justify-content: center; }
+            .nav-divider { width: 100%; height: 1px; margin: 10px 0; }
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: auto; padding-top: 3rem; text-align: center;
+            font-size: 0.85rem; color: #7f8c8d;
+        }
+        .footer a { color: #7f8c8d; text-decoration: none; margin: 0 10px; }
+        .footer a:hover { color: var(--primary-color); text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <!-- Loader Animation -->
+    <div id="page-loader"><div class="spinner"></div></div>
+    <script>
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('page-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 400);
+        });
+
+        // Dynamic Form Input Function
+        function addDynamicInput(containerId, inputName, placeholder) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.innerHTML = `
+                <input type="text" name="${inputName}" placeholder="${placeholder}" required>
+                <button type="button" class="btn btn-danger icon-btn" onclick="this.parentElement.remove()" title="Remove">
+                    <span class="material-icons">delete</span>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+    </script>
+
+    {% if not is_dashboard %}
+    <nav class="top-navbar">
+        <a href="/" class="brand">{{ PLATFORM_NAME }}</a>
+        
+        <form method="GET" action="{{ url_for('index') }}" class="nav-search">
+            <button type="submit"><span class="material-icons">search</span></button>
+            <input type="text" name="q" placeholder="Search for products, brands and more...">
+        </form>
+
+        <button class="mobile-menu-btn" onclick="document.getElementById('nav-links').classList.toggle('active')">
+            <span class="material-icons">menu</span>
+        </button>
+        <div class="nav-links" id="nav-links">
+            <a href="{{ url_for('list_products') }}" class="nav-item">Shop</a>
+            {% if session.get('user_id') %}
+                {% if session.get('role') == 'user' %}
+                    <a href="{{ url_for('view_cart') }}" class="nav-item">Cart</a>
+                    <a href="{{ url_for('user_dashboard') }}" class="nav-item">My Account</a>
+                {% endif %}
+                {% if session.get('role') == 'merchant' %}
+                    <a href="{{ url_for('merchant_dashboard') }}" class="nav-item">Dashboard</a>
+                {% elif session.get('role') == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-item">Admin Panel</a>
+                {% else %}
+                    <!-- Fallback for other roles, if any -->
+                {% endif %}
+                {% if session.get('role') == 'admin' %}
+                    <a href="{{ url_for('logout') }}" class="btn-luxury" style="background: transparent; color: #000 !important; border: 1px solid #000;">Logout</a>
+                {% endif %}
+            {% else %}
+                <div class="auth-buttons">
+                    <a href="{{ url_for('login', role='user') }}" class="nav-link-subtle">Log In</a>
+                    <a href="{{ url_for('signup', role='user') }}" class="btn-luxury">Sign Up</a>
+                    <div class="nav-divider"></div>
+                    <a href="{{ url_for('signup', role='merchant') }}" class="btn-luxury-outline">Sell with Us</a>
+                </div>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="main-content">
+        {% for message in get_flashed_messages() %}
+            <div class="flash">{{ message }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+        
+        <div class="footer">
+            <a href="{{ url_for('policy', policy_name='terms') }}">Terms & Conditions</a> |
+            <a href="{{ url_for('policy', policy_name='privacy') }}">Privacy Policy</a> |
+            <a href="{{ url_for('policy', policy_name='cancellation') }}">Cancellation</a> |
+            <a href="{{ url_for('policy', policy_name='user') }}">User Policy</a> |
+            <a href="{{ url_for('policy', policy_name='merchant') }}">Merchant Policy</a>
+            <p>&copy; 2024 {{ PLATFORM_NAME }} Ecommerce. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+    <style>
+        .product-grid { display: flex; gap: 40px; margin-top: 20px; flex-wrap: wrap; }
+        .product-images { flex: 1; min-width: 300px; }
+        .main-img { width: 100%; border-radius: 8px; object-fit: cover; max-height: 400px; background: #eaeaea; }
+        .thumb-row { display: flex; gap: 10px; margin-top: 10px; overflow-x: auto; }
+        .thumb-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+        .thumb-img:hover { border-color: var(--primary-color); }
+        
+        .product-info { flex: 1; min-width: 300px; position: relative; }
+        .ribbon { position: absolute; top: -10px; right: -10px; background: #e74c3c; color: white; padding: 5px 15px; font-weight: bold; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        
+        .price { font-size: 2rem; color: #27ae60; font-weight: bold; margin: 15px 0; }
+        .sizes { display: flex; gap: 10px; margin: 15px 0; }
+        .size-box { padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+        .size-box:hover { border-color: var(--primary-color); }
+    </style>
+
+    <div class="card product-grid">
+        <div class="product-images">
+            {% if product.images and product.images|length > 0 %}
+                {% set main_img_url = url_for('static', filename=product.images[0]|replace('static/', '')) %}
+                <img src="{{ main_img_url }}" class="main-img" id="mainImage" alt="{{ product.name }}">
+                <div class="thumb-row">
+                    {% for img in product.images %}
+                        {% set img_url = url_for('static', filename=img|replace('static/', '')) %}
+                        <img src="{{ img_url }}" class="thumb-img" onclick="document.getElementById('mainImage').src='{{ img_url }}'" alt="Thumbnail">
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="main-img" style="display:flex; align-items:center; justify-content:center; color:#999; height:300px;">No Image Available</div>
+            {% endif %}
+        </div>
+        
+        <div class="product-info" style="min-width: 0;">
+            {% if product.stock > 0 and product.stock <= 5 %}
+                <div class="ribbon">Hurry! Only {{ product.stock }} left</div>
+            {% elif product.stock == 0 %}
+                <div class="ribbon" style="background: #7f8c8d;">Out of Stock</div>
+            {% endif %}
+            
+            <h1 style="margin-top: 0;">{{ product.name }}</h1>
+            <p style="color: #666; font-size: 1.1rem; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; max-width: 100%;">{{ product.description }}</p>
+            <div class="price">₹{{ product.price }}</div>
+            
+            {% if product.sizes %}
+                <p><b>Available Sizes:</b></p>
+                <div class="sizes">
+                    {% for size in product.sizes %}
+                        <div class="size-box">{{ size }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            
+            {% if session.get('role') == 'user' %}
+                <form method="POST" action="{{ url_for('add_to_cart') }}" style="display: flex; gap: 15px; margin-top: 20px; align-items: center;">
+                    <input type="hidden" name="product_id" value="{{ product._id }}">
+                    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" style="width: 80px;" required {% if product.stock == 0 %}disabled{% endif %}>
+                    <button type="submit" class="btn btn-primary" style="flex: 1; padding: 15px; font-size: 1.1rem;" {% if product.stock == 0 %}disabled{% endif %}>
+                        <span class="material-icons">add_shopping_cart</span> Add to Cart
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('add_to_wishlist') }}" style="margin-top: 10px;">
+                    <input type="hidden" name="product_id" value="{{ product._id }}">
+                    <button type="submit" class="btn btn-outline" style="width: 100%; border-width: 2px; padding: 15px;">
+                        <span class="material-icons">favorite_border</span> Add to Wishlist
+                    </button>
+                </form>
+            {% else %}
+                <p><i>Please <a href="{{ url_for('login', role='user') }}">log in as a user</a> to purchase items.</i></p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Admin Dashboard</h2>
+    
+    <div class="card">
+        <h3>Sales Report</h3>
+        <form method="GET" action="/admin/dashboard">
+            <label>Start Date:</label>
+            <input type="date" name="start_date" value="{{ start_date or '' }}">
+            <label>End Date:</label>
+            <input type="date" name="end_date" value="{{ end_date or '' }}">
+            <button type="submit">Filter</button>
+            <a href="/admin/dashboard"><button type="button">Clear Filter</button></a>
+        </form>
+        <h3 style="color: green;">Total Sales: ${{ total_sales }}</h3>
+    </div>
+
+    <div class="card">
+        <h3>All Platform Orders</h3>
+        <table border="1" cellpadding="8" style="width: 100%; border-collapse: collapse;">
+            <tr><th>Order ID</th><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th></tr>
+            {% for order in orders %}
+                <tr>
+                    <td>{{ order._id }}</td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>${{ order.total_amount }}</td>
+                    <td>{{ order.status }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No orders found.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock %}

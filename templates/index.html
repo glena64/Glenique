@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-section">
+    <div class="hero-bg active" style="background-image: url('https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');"></div>
+    <div class="hero-bg" style="background-image: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');"></div>
+    <div class="hero-bg" style="background-image: url('https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80');"></div>
+    
+    <div class="hero-content">
+        <div class="hero-text-block">
+            <h1 class="hero-title" id="hero-title" style="transition: opacity 0.5s ease;">Elevate Your<br>Lifestyle.</h1>
+            <p class="hero-subtitle" id="hero-subtitle" style="transition: opacity 0.5s ease;">Discover curated collections from premium brands and visionary creators.</p>
+            <a href="{{ url_for('list_products') }}" class="btn btn-primary" style="padding: 16px 40px; font-size: 1.1rem; margin-top: 10px;">Shop the Collection</a>
+        </div>
+    </div>
+</div>
+
+<div class="container modern-section">
+    <div class="filter-bar">
+        <h2 class="section-title">{% if search_query %}Results for "{{ search_query }}"{% else %}Trending Now{% endif %}</h2>
+        <form method="GET" action="{{ url_for('index') }}">
+            {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+            <select name="sort" class="sort-select" onchange="this.form.submit()">
+                <option value="">Sort By</option>
+                <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                <option value="most_sold" {% if sort_by == 'most_sold' %}selected{% endif %}>Most Sold</option>
+            </select>
+        </form>
+    </div>
+    <div class="product-grid-modern">
+        {% for product in products %}
+        <div class="product-card-modern">
+            <a href="{{ url_for('product_detail', slug=product.slug, product_id=product._id) }}" class="product-link">
+                <div class="product-image-container">
+                    {% if product.images and product.images|length > 0 %}
+                        <img src="{{ url_for('static', filename=product.images[0]|replace('static/', '')) }}" alt="{{ product.name }}" class="product-img">
+                    {% else %}
+                        <div class="no-img">No Image</div>
+                    {% endif %}
+                    {% if product.stock > 0 and product.stock <= 5 %}
+                        <span class="badge-warning">Only {{ product.stock }} left!</span>
+                    {% elif product.stock == 0 %}
+                        <span class="badge-danger">Out of Stock</span>
+                    {% endif %}
+                </div>
+                <div class="product-details">
+                    <h3 class="product-name">{{ product.name }}</h3>
+                    <p class="product-price">₹{{ product.price }}</p>
+                    <div class="product-footer">
+                        {% if session.get('user_id') == product.merchant_id %}
+                            <span class="sales-count">{{ product.sales_count or 0 }} sold</span>
+                        {% else %}
+                            <span></span>
+                        {% endif %}
+                        <span class="action-btn">View Details →</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No products found matching your criteria.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    const slidesData = [
+        { title: "Elevate Your<br>Lifestyle.", subtitle: "Discover curated collections from premium brands and visionary creators." },
+        { title: "Timeless<br>Elegance.", subtitle: "Explore fashion that transcends trends and celebrates individuality." },
+        { title: "Unleash Your<br>Potential.", subtitle: "Equip yourself with the finest gear for every adventure." }
+    ];
+
+    let currentSlide = 0;
+    const bgs = document.querySelectorAll('.hero-bg');
+    const titleEl = document.getElementById('hero-title');
+    const subtitleEl = document.getElementById('hero-subtitle');
+
+    setInterval(() => {
+        titleEl.style.opacity = 0;
+        subtitleEl.style.opacity = 0;
+
+        setTimeout(() => {
+            bgs[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slidesData.length;
+            bgs[currentSlide].classList.add('active');
+
+            titleEl.innerHTML = slidesData[currentSlide].title;
+            subtitleEl.innerHTML = slidesData[currentSlide].subtitle;
+
+            titleEl.style.opacity = 1;
+            subtitleEl.style.opacity = 1;
+        }, 500);
+    }, 6000); // Transitions every 6 seconds
+</script>
+{% endblock %}

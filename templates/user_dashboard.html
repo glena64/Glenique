@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .dashboard-nav {
+        position: fixed;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #fff;
+        border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 15px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 1000;
+    }
+    .nav-btn {
+        background: none; border: none; padding: 8px; border-radius: 12px;
+        width: 70px; height: 70px; flex-direction: column;
+        cursor: pointer; color: #555; transition: 0.3s;
+        display: flex; align-items: center; justify-content: center; position: relative;
+        text-decoration: none;
+    }
+    .nav-btn:hover { background: #f0f0f0; color: #000; }
+    .nav-btn.active { background: #000; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .nav-btn .nav-label { 
+        position: static; background: transparent; color: inherit;
+        padding: 0; border-radius: 0; font-size: 0.65rem; font-weight: 500;
+        opacity: 1; pointer-events: auto; transition: 0.3s; white-space: normal;
+        margin-top: 6px; text-align: center; line-height: 1.2;
+    }
+    .nav-btn.active .nav-label { color: #fff; }
+    .nav-btn:hover .nav-label { opacity: 1; left: auto; color: inherit; }
+    .nav-btn.active:hover .nav-label { color: #fff; }
+
+    .dashboard-content { 
+        flex: 1; 
+        margin-left: 105px;
+        padding-left: 20px;
+        max-width: 1200px;
+        width: 100%; 
+        box-sizing: border-box; 
+    }
+    .dash-section { display: none; animation: fadeIn 0.4s ease; }
+    .dash-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+        .dashboard-nav {
+            left: 50%; top: auto; bottom: 20px;
+            transform: translateX(-50%);
+            flex-direction: row; padding: 10px 20px;
+        }
+        .nav-btn .nav-label { display: none; }
+        .dashboard-content { margin-left: 0 !important; padding-left: 0 !important; padding-bottom: 100px; }
+    }
+
+    .status-badge {
+        padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    }
+    .status-received { background: #fff3cd; color: #856404; }
+    .status-packed { background: #cce5ff; color: #004085; }
+    .status-delivered { background: #d4edda; color: #155724; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+
+<nav class="dashboard-nav">
+    <a href="{{ url_for('list_products') }}" class="nav-btn"><span class="material-icons">explore</span> <span class="nav-label">Explore</span></a>
+    <button class="nav-btn active" onclick="showSection('orders-section', this)"><span class="material-icons">receipt_long</span> <span class="nav-label">My Orders</span></button>
+    <button class="nav-btn" onclick="showSection('wishlist-section', this)"><span class="material-icons">favorite</span> <span class="nav-label">Wishlist</span></button>
+    <button class="nav-btn" onclick="showSection('profile-section', this)"><span class="material-icons">person</span> <span class="nav-label">Profile</span></button>
+    <a href="{{ url_for('logout') }}" class="nav-btn"><span class="material-icons">logout</span> <span class="nav-label">Logout</span></a>
+</nav>
+
+<div class="dashboard-content">
+    <!-- Orders Section -->
+    <div id="orders-section" class="dash-section active">
+        <h2 class="section-title" style="margin-bottom: 20px;">Order History</h2>
+        <div class="card">
+            <div style="overflow-x: auto;">
+                <table>
+                    <tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th></tr>
+                    {% for order in orders %}
+                        <tr>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ order.product_name }}</td>
+                            <td>{{ order.quantity }}</td>
+                            <td>₹{{ order.total_amount }}</td>
+                            <td><span class="status-badge status-{{ order.status }}">{{ order.status }}</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">You haven't placed any orders yet.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wishlist Section -->
+    <div id="wishlist-section" class="dash-section">
+        <h2 class="section-title" style="margin-bottom: 20px;">Your Wishlist</h2>
+        <div class="product-grid-modern">
+            {% for product in wishlist %}
+            <div class="product-card-modern">
+                <a href="{{ url_for('product_detail', slug=product.slug, product_id=product._id) }}" class="product-link">
+                    <div class="product-image-container">
+                        {% if product.images and product.images|length > 0 %}
+                            <img src="{{ url_for('static', filename=product.images[0]|replace('static/', '')) }}" alt="{{ product.name }}" class="product-img">
+                        {% else %}
+                            <div class="no-img">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-details">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <p class="product-price">₹{{ product.price }}</p>
+                    </div>
+                </a>
+                <form action="{{ url_for('remove_from_wishlist', product_id=product._id) }}" method="POST" style="padding: 0 20px 20px;">
+                    <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;">Remove</button>
+                </form>
+            </div>
+            {% else %}
+            <p>Your wishlist is empty. Add products you love!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profile-section" class="dash-section">
+        <h2 class="section-title" style="margin-bottom: 20px;">My Profile</h2>
+        <div class="card">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Edit Personal Information</h3>
+            <form method="POST" action="{{ url_for('user_dashboard') }}">
+                <input type="hidden" name="update_profile" value="1">
+                <div class="form-grid">
+                    <div>
+                        <label style="font-weight: 500;">Full Name</label>
+                        <input type="text" name="name" value="{{ user.name }}" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Email Address</label>
+                        <input type="email" value="{{ user.email }}" disabled style="background: #f0f0f0; cursor: not-allowed; color: #777;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Phone Number</label>
+                        <input type="tel" name="phone" value="{{ user.phone }}" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Reset Password (Optional)</label>
+                        <input type="password" name="new_password" placeholder="Leave blank to keep current">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="font-weight: 500;">Your Addresses (One per line)</label>
+                        <textarea name="addresses" required style="height: 100px;">{% for addr in user.addresses %}{{ addr }}&#13;&#10;{% endfor %}</textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Save Profile Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showSection(sectionId, btn) {
+        document.querySelectorAll('.dash-section').forEach(sec => {
+            sec.style.display = 'none';
+            sec.classList.remove('active');
+        });
+        const activeSection = document.getElementById(sectionId);
+        activeSection.style.display = 'block';
+        activeSection.classList.add('active');
+        
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        history.replaceState(null, null, ' ' + window.location.pathname + '#' + sectionId);
+    }
+
+    window.addEventListener('load', () => {
+        const hash = window.location.hash.substring(1);
+        const sections = {
+            'orders-section': 1,
+            'wishlist-section': 2,
+            'profile-section': 3
+        };
+        const defaultSection = 'orders-section';
+        const sectionToShow = sections[hash] ? hash : defaultSection;
+        const buttonIndex = sections[sectionToShow] || 1;
+        
+        const btns = document.querySelectorAll('.nav-btn');
+        if (btns[buttonIndex]) {
+            showSection(sectionToShow, btns[buttonIndex]);
+        }
+    });
+</script>
+{% endblock %}

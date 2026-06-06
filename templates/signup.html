@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-sidebar" style="background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') no-repeat center center/cover;">
+                <div style="padding: 50px;">
+                    <h2>Join as a {{ role|capitalize }}</h2>
+                    <p>Create an account and experience the future of digital commerce today.</p>
+                </div>
+            </div>
+            <div class="auth-form-container">
+                <form method="POST" action="{{ url_for('signup', role=role) }}" class="auth-form">
+                    <div class="form-group">
+                        <input type="text" name="name" required placeholder="Full Name">
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" required placeholder="Email Address">
+                    </div>
+                    <div class="form-group">
+                        <input type="tel" name="phone" required placeholder="Phone Number">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" required placeholder="Password">
+                    </div>
+                    <div class="form-group">
+                        <textarea name="address" required placeholder="Primary Address"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="auth-btn">Continue</button>
+                    </div>
+                </form>
+                <p class="auth-footer">Already have an account? <a href="{{ url_for('login', role=role) }}" class="auth-link">Log in here</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

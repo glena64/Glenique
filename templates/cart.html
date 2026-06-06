@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container modern-section">
+    <h2 class="section-title">Your Shopping Cart</h2>
+    {% if cart %}
+        <div class="card" style="margin-top: 30px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('product_detail', slug=item.product.slug, product_id=item.product._id) }}" style="text-decoration: none; color: inherit; font-weight: 600;">
+                                    {{ item.product.name }}
+                                </a>
+                            </td>
+                            <td>₹{{ item.product.price }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>₹{{ item.item_total }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('remove_from_cart', cart_id=item.cart_id) }}" style="margin: 0;">
+                                    <button type="submit" class="btn btn-sm btn-danger icon-btn"><span class="material-icons">delete</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 30px; gap: 30px;">
+                <div style="font-size: 1.4rem; font-weight: 700;">Grand Total: ₹{{ total }}</div>
+                <form method="POST" action="{{ url_for('checkout') }}">
+                    <button type="submit" class="btn btn-success" style="padding: 15px 30px; font-size: 1.1rem;">Checkout</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="card" style="margin-top: 30px; text-align: center; padding: 50px;">
+            <span class="material-icons" style="font-size: 4rem; color: #ccc;">shopping_cart</span>
+            <h3 style="color: #666; margin-top: 20px;">Your cart is empty</h3>
+            <a href="{{ url_for('list_products') }}" class="btn btn-primary" style="margin-top: 20px;">Continue Shopping</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

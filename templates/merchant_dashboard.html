@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .dashboard-nav {
+        position: fixed;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #fff;
+        border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 15px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 1000;
+    }
+    .nav-btn {
+        background: none; border: none; padding: 8px; border-radius: 12px;
+        width: 70px; height: 70px; flex-direction: column;
+        cursor: pointer; color: #555; transition: 0.3s;
+        display: flex; align-items: center; justify-content: center; position: relative;
+        text-decoration: none;
+    }
+    .nav-btn:hover { background: #f0f0f0; color: #000; }
+    .nav-btn.active { background: #000; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .nav-btn .nav-label { 
+        position: static; background: transparent; color: inherit;
+        padding: 0; border-radius: 0; font-size: 0.65rem; font-weight: 500;
+        opacity: 1; pointer-events: auto; transition: 0.3s; white-space: normal;
+        margin-top: 6px; text-align: center; line-height: 1.2;
+    }
+    .nav-btn.active .nav-label { color: #fff; }
+    .nav-btn:hover .nav-label { opacity: 1; left: auto; color: inherit; }
+    .nav-btn.active:hover .nav-label { color: #fff; }
+
+    @media (max-width: 768px) {
+        .dashboard-nav {
+            left: 50%; top: auto; bottom: 20px;
+            transform: translateX(-50%);
+            flex-direction: row; padding: 10px 20px;
+        }
+        .nav-btn .nav-label { display: none; }
+        .dashboard-content { margin-left: 0 !important; padding-left: 0 !important; padding-bottom: 100px; }
+    }
+
+    .dashboard-content { 
+        flex: 1; 
+        margin-left: 105px;
+        padding-left: 20px;
+        max-width: 1200px;
+        width: 100%; 
+        box-sizing: border-box; 
+    }
+    .dash-section { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .stat-card h4 { margin: 0 0 10px 0; color: #777; font-weight: 500; font-size: 1rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 800; color: #000; }
+
+    .file-upload-wrapper {
+        position: relative; width: 100%; border: 2px dashed #ccc; border-radius: 12px;
+        padding: 40px; text-align: center; background: #fcfcfc; transition: 0.3s;
+        cursor: pointer; box-sizing: border-box;
+    }
+    .file-upload-wrapper:hover { border-color: #000; background: #fff; }
+    .file-upload-wrapper input[type="file"] {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    
+    .status-badge {
+        padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    }
+    .status-received { background: #fff3cd; color: #856404; }
+    .status-packed { background: #cce5ff; color: #004085; }
+    .status-delivered { background: #d4edda; color: #155724; }
+
+    .nav-badge {
+        position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff;
+        border-radius: 10px; padding: 2px 6px; font-size: 0.6rem; font-weight: bold;
+    }
+</style>
+
+<nav class="dashboard-nav">
+    <button class="nav-btn active" onclick="showSection('dashboard-section', this)"><span class="material-icons">dashboard</span> <span class="nav-label">Overview</span></button>
+    <button class="nav-btn" onclick="showSection('add-product-section', this)"><span class="material-icons">add_box</span> <span class="nav-label">Add Product</span></button>
+    <button class="nav-btn" onclick="showSection('products-section', this)"><span class="material-icons">inventory_2</span> <span class="nav-label">Inventory</span></button>
+    <button class="nav-btn" onclick="showSection('orders-section', this)"><span class="material-icons">local_shipping</span> <span class="nav-label">Orders</span></button>
+    <button class="nav-btn" onclick="showSection('notifications-section', this); markNotificationsRead();">
+        <span class="material-icons">notifications</span> <span class="nav-label">Alerts</span>
+        {% if unread_count > 0 %}<span class="nav-badge" id="notif-badge">{{ unread_count }}</span>{% endif %}
+    </button>
+    <button class="nav-btn" onclick="showSection('profile-section', this)"><span class="material-icons">person</span> <span class="nav-label">Profile</span></button>
+    <a href="{{ url_for('logout') }}" class="nav-btn"><span class="material-icons">logout</span> <span class="nav-label">Logout</span></a>
+</nav>
+
+<div class="dashboard-content">
+    <!-- Overview Section -->
+    <div id="dashboard-section" class="dash-section">
+        <h2 class="section-title" style="margin-bottom: 20px;">Overview</h2>
+        
+        <div class="card" style="margin-bottom: 20px;">
+            <form method="GET" action="{{ url_for('merchant_dashboard') }}" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div>
+                    <label style="font-size: 0.85rem; color: #666; font-weight: 600;">Start Date</label>
+                    <input type="date" name="start_date" value="{{ start_date or '' }}" style="margin-top: 5px;" class="form-control">
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: #666; font-weight: 600;">End Date</label>
+                    <input type="date" name="end_date" value="{{ end_date or '' }}" style="margin-top: 5px;" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 12px 24px; border-radius: 8px;">Filter Date</button>
+                <a href="{{ url_for('merchant_dashboard') }}" class="btn btn-outline" style="padding: 12px 24px; border-radius: 8px;">Clear</a>
+            </form>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <h4>Total Products</h4>
+                <div class="value">{{ total_products }}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Orders in Range</h4>
+                <div class="value">{{ total_orders_count }}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Income in Range</h4>
+                <div class="value">₹{{ total_sales }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Section -->
+    <div id="add-product-section" class="dash-section" style="display: none;">
+        <h2 class="section-title" style="margin-bottom: 20px;">Add New Product</h2>
+        <div class="card" style="margin-bottom: 30px;">
+            <form method="POST" action="/merchant/dashboard" enctype="multipart/form-data">
+                <input type="hidden" name="add_product" value="1">
+                
+                <div class="form-grid">
+                    <div>
+                        <label style="font-weight: 500;">Product Name</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Price (₹)</label>
+                        <input type="number" step="0.01" name="price" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Stock Quantity</label>
+                        <input type="number" name="stock" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Description</label>
+                        <textarea name="description" required style="height: 48px; min-height: 48px;"></textarea>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <label style="font-weight: 500;">Product Images (Multiple)</label>
+                    <div class="file-upload-wrapper">
+                        <span class="material-icons" style="font-size: 3rem; color: #aaa;">cloud_upload</span>
+                        <p style="margin: 10px 0 0; color: #666;">Drag and drop or click to upload images</p>
+                        <input type="file" name="images" multiple accept="image/*" id="productImagesInput" onchange="updateFileName(this)">
+                        <div id="file-name-display" style="margin-top: 10px; font-weight: 600; font-size: 0.9rem; color: #333;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <label style="font-weight: 500;">Available Sizes</label>
+                    <div id="size-container">
+                        <div class="input-group">
+                            <input type="text" name="sizes" placeholder="e.g., S, M, L, XL" required>
+                            <button type="button" class="btn btn-danger icon-btn" onclick="this.parentElement.remove()" title="Remove">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addDynamicInput('size-container', 'sizes', 'Size variant')"><span class="material-icons">add</span> Add Size Variant</button>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="margin-top: 20px; width: 100%;">Post Product</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Section -->
+    <div id="products-section" class="dash-section" style="display: none;">
+        <h2 class="section-title" style="margin-bottom: 20px;">Inventory</h2>
+        <div class="card">
+            <div style="overflow-x: auto;">
+                <table>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for p in products %}
+                        <tr style="{% if p.stock < 5 %}background: #fff5f5;{% endif %}">
+                            <td>
+                                <a href="{{ url_for('product_detail', slug=p.slug, product_id=p._id) }}" style="color: inherit; text-decoration: none; font-weight: 600;">
+                                    {{ p.name }}
+                                </a>
+                                {% if p.stock < 5 %}<span style="color: #e74c3c; font-size: 0.75rem; font-weight: bold; margin-left: 10px;">Low Stock</span>{% endif %}
+                            </td>
+                            <td>₹{{ p.price }}</td>
+                            <td>{{ p.stock }}</td>
+                            <td>
+                                <form method="POST" action="/merchant/dashboard" onsubmit="return confirm('Are you sure you want to delete this product?');" style="margin: 0;">
+                                    <input type="hidden" name="delete_product" value="{{ p._id }}">
+                                    <button type="submit" class="btn btn-sm btn-danger icon-btn" style="border-radius: 8px;"><span class="material-icons">delete</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4">No products posted yet.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Section -->
+    <div id="orders-section" class="dash-section" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h2 class="section-title" style="margin: 0;">Fulfillment</h2>
+            <form method="GET" action="{{ url_for('merchant_dashboard') }}" id="orderFilterForm" style="display: flex; align-items: center; gap: 10px;">
+                <input type="hidden" name="status_filter" value="1">
+                <span class="material-icons" style="color: #666;">filter_list</span>
+                <select name="status" class="sort-select" onchange="document.getElementById('orderFilterForm').submit()" style="margin: 0;">
+                    <option value="">All Orders</option>
+                    <option value="received" {% if request.args.get('status') == 'received' %}selected{% endif %}>Received</option>
+                    <option value="packed" {% if request.args.get('status') == 'packed' %}selected{% endif %}>Packed</option>
+                    <option value="delivered" {% if request.args.get('status') == 'delivered' %}selected{% endif %}>Delivered</option>
+                </select>
+            </form>
+        </div>
+        
+        <div class="card">
+            <div style="overflow-x: auto;">
+                <table>
+                    <tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Update</th></tr>
+                    {% for order in orders %}
+                        <tr>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ order.product_name }}</td>
+                            <td>{{ order.quantity }}</td>
+                            <td>₹{{ order.total_amount }}</td>
+                            <td>
+                                <span class="status-badge status-{{ order.status }}">{{ order.status }}</span>
+                            </td>
+                            <td>
+                                <form method="POST" action="/merchant/dashboard" style="display: flex; gap: 10px;">
+                                    <input type="hidden" name="update_order" value="1">
+                                    <input type="hidden" name="order_id" value="{{ order._id }}">
+                                    <select name="status" style="width: auto; padding: 8px; margin: 0; min-width: 110px; border-radius: 8px;">
+                                        <option value="received" {% if order.status == 'received' %}selected{% endif %}>Received</option>
+                                        <option value="packed" {% if order.status == 'packed' %}selected{% endif %}>Packed</option>
+                                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px;"><span class="material-icons" style="font-size: 1.1rem;">save</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">No orders found matching your criteria.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Section -->
+    <div id="notifications-section" class="dash-section" style="display: none;">
+        <h2 class="section-title" style="margin-bottom: 20px;">Recent Alerts & Notifications</h2>
+        <div class="card" style="padding: 0; overflow: hidden;">
+            {% for notif in notifications %}
+                <div style="padding: 20px; border-bottom: 1px solid #eee; background: {% if not notif.read %}#f9fdfa{% else %}#fff{% endif %};">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong style="color: {% if notif.type == 'alert' %}#e74c3c{% elif notif.type == 'order' %}#27ae60{% else %}#000{% endif %}; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">{{ notif.type }}</strong>
+                        <span style="color: #888; font-size: 0.85rem;">{{ notif.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    <p style="margin: 0; color: #333; font-size: 1rem; line-height: 1.5;">{{ notif.message }}</p>
+                </div>
+            {% else %}
+                <p style="padding: 30px 20px; text-align: center; color: #777; margin: 0;">You have no notifications yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profile-section" class="dash-section" style="display: none;">
+        <h2 class="section-title" style="margin-bottom: 20px;">Merchant Profile</h2>
+        <div class="card">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Edit Personal Information</h3>
+            <form method="POST" action="{{ url_for('merchant_dashboard') }}">
+                <input type="hidden" name="update_profile" value="1">
+                <div class="form-grid">
+                    <div>
+                        <label style="font-weight: 500;">Full Name</label>
+                        <input type="text" name="name" value="{{ merchant.name }}" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Email Address</label>
+                        <input type="email" value="{{ merchant.email }}" disabled style="background: #f0f0f0; cursor: not-allowed; color: #777;">
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Phone Number</label>
+                        <input type="tel" name="phone" value="{{ merchant.phone }}" required>
+                    </div>
+                    <div>
+                        <label style="font-weight: 500;">Reset Password (Optional)</label>
+                        <input type="password" name="new_password" placeholder="Leave blank to keep current">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="font-weight: 500;">Primary Addresses (One per line)</label>
+                        <textarea name="addresses" required style="height: 100px;">{% for addr in merchant.addresses %}{{ addr }}&#13;&#10;{% endfor %}</textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Save Profile Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showSection(sectionId, btn) {
+        document.querySelectorAll('.dash-section').forEach(sec => sec.style.display = 'none');
+        document.getElementById(sectionId).style.display = 'block';
+        
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Save state to URL hash without jumping
+        history.replaceState(null, null, ' ' + window.location.pathname + window.location.search + '#' + sectionId);
+    }
+    
+    function updateFileName(input) {
+        const display = document.getElementById('file-name-display');
+        if (input.files.length > 0) {
+            display.textContent = input.files.length + ' file(s) selected';
+        } else {
+            display.textContent = '';
+        }
+    }
+
+    window.addEventListener('load', () => {
+        let hash = window.location.hash.substring(1);
+        
+        // Ensure valid hash, default to dashboard
+        const validSections = ['dashboard-section', 'add-product-section', 'products-section', 'orders-section', 'notifications-section', 'profile-section'];
+        if (!validSections.includes(hash)) {
+            // Check URL search parameters (like status filtering redirects to orders)
+            if (window.location.search.includes('status=')) {
+                hash = 'orders-section';
+            } else {
+                hash = 'dashboard-section';
+            }
+        }
+        
+        const sectionIndex = validSections.indexOf(hash);
+        if (sectionIndex !== -1) {
+            const btns = document.querySelectorAll('.nav-btn');
+            if(btns[sectionIndex]) {
+                showSection(hash, btns[sectionIndex]);
+            }
+        }
+    });
+</script>
+{% endblock %}

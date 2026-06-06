@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container modern-section">
+    <div class="filter-bar">
+        <h2 class="section-title">Shop All Products</h2>
+    </div>
+    <div class="product-grid-modern">
+        {% for product in products %}
+        <div class="product-card-modern">
+            <a href="{{ url_for('product_detail', slug=product.slug, product_id=product._id) }}" class="product-link">
+                <div class="product-image-container">
+                    {% if product.images and product.images|length > 0 %}
+                        <img src="{{ url_for('static', filename=product.images[0]|replace('static/', '')) }}" alt="{{ product.name }}" class="product-img">
+                    {% else %}
+                        <div class="no-img">No Image</div>
+                    {% endif %}
+                    {% if product.stock > 0 and product.stock <= 5 %}
+                        <span class="badge-warning">Only {{ product.stock }} left!</span>
+                    {% elif product.stock == 0 %}
+                        <span class="badge-danger">Out of Stock</span>
+                    {% endif %}
+                </div>
+                <div class="product-details">
+                    <h3 class="product-name">{{ product.name }}</h3>
+                    <p class="product-price">₹{{ product.price }}</p>
+                    <div class="product-footer">
+                        {% if session.get('user_id') == product.merchant_id %}
+                            <span class="sales-count">{{ product.sales_count or 0 }} sold</span>
+                        {% else %}
+                            <span></span>
+                        {% endif %}
+                        <span class="action-btn">View Details →</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 50px;">
+            <p>No products available yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
